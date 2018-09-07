@@ -1,4 +1,11 @@
 #!/bin/bash
+##########################
+##########################
+#  GCLOUD COMMAND 
+#  gcloud compute instances add-metadata [instance name] --metadata-from-file startup-script=ssh-debug.sh
+##########################
+##########################
+
 
 
 CMDS=`cat <<END
