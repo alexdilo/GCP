@@ -44,9 +44,9 @@ list=$(for access in `gcloud projects list --format="value(projectId)"` ; do gcl
 options1=(`number=0 ; for i in $list ; do (( number ++)); echo "$i $number off" ; done `)
 projects=$("${cmd[@]}" "${options1[@]}" 2>&1 >/dev/tty)
 echo $projects > /tmp/project-list
-clear
 fi
 projects=`cat /tmp/project-list`
+clear
 }
 
 options=("List-service-account-Keys-with-creator-SLOW" "List-service-account-Keys-without-creator-FAST" "List-unused-Service-account" "List-services-account" "Rotate-key" "Delete-cache" "Quit")
@@ -67,18 +67,17 @@ rm /tmp/project-list
 
 List-service-account-Keys-with-creator-SLOW)
 listing
-
+             echo "                                                                         LISTING SERVICE ACCOUNT'S KEY PROCESS"
 for a in ${projects[@]}
 
-   do 
+   do
 	for i in `service_account email $a` 
        do  
           list=`key_list $i $a` 
             if  [ ! -z "$list" ] 
              then
-             echo "                                                                         LISTING SERVICE ACCOUNT'S KEY PROCESS"
-             echo -e "\n*************************************************************************************"
-             echo -e "\n\nPROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list"   
+             echo -e "\n\n*************************************************************************************"
+             echo -e "PROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list"   
              for b in `owner_finder $a $i` ; do echo -e CREATOR $b ; done 
              echo       "************************************************************************************"              
  
@@ -95,6 +94,7 @@ for a in ${projects[@]}
 
 List-service-account-Keys-without-creator-FAST)
 listing
+             echo "                                                                        LISTING SERVICE ACCOUNT'S KEY PROCESS"
 
 for a in ${projects[@]}
 
@@ -104,9 +104,8 @@ for a in ${projects[@]}
           list=`key_list $i $a`
             if  [ ! -z "$list" ]
              then
-             echo "                                                                        LISTING SERVICE ACCOUNT'S KEY PROCESS"
-             echo -e "\n*************************************************************************************"
-             echo -e "\n\nPROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list"   
+             echo -e "\n\n*************************************************************************************"
+             echo -e "PROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list"   
              echo       "************************************************************************************"              
            fi
        done
