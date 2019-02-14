@@ -35,13 +35,13 @@ gcloud iam service-accounts list --format="value($1)" --project "$2"
 
 
 listing () {
-clear
-echo  -e "\033[33;5;7mPlease wait...loading your projects \033[0m"
+
 cmd=(dialog --separate-output --checklist "Select your projects:" 22  76 16)
 list=$(for access in `gcloud projects list --format="value(projectId)"` ; do gcloud  iam service-accounts list  --project "$access"  > /dev/null 2>&1 &&  echo  $access ; done)
 options1=(`number=0 ; for i in $list ; do (( number ++)); echo "$i $number off" ; done `)
 projects=$("${cmd[@]}" "${options1[@]}" 2>&1 >/dev/tty)
 clear
+echo  -e "\033[33;5;7mPlease wait...loading your projects \033[0m"
 }
 
 options=("List-service-account-Keys-with-creator-SLOW" "List-service-account-Keys-without-creator-FAST" "List-unused-Service-account" "List-services-account" "Rotate-key" "Quit")
