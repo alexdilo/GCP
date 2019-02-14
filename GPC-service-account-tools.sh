@@ -35,16 +35,21 @@ gcloud iam service-accounts list --format="value($1)" --project "$2"
 
 
 listing () {
+if [ ! -f /tmp/project-list ]; then
 clear
-echo  -e "\033[33;5;7mPlease wait...loading your projects \033[0m"
+echo "                                                                         LISTING GOOGLE CLOUD PROJECT PROCESS"
+echo  -e "\033[33;5;7mPlease wait...searching projects that you have access to.This might take a few minute \033[0m"
 cmd=(dialog --separate-output --checklist "Select your projects:" 22  76 16)
 list=$(for access in `gcloud projects list --format="value(projectId)"` ; do gcloud  iam service-accounts list  --project "$access"  > /dev/null 2>&1 &&  echo  $access ; done)
 options1=(`number=0 ; for i in $list ; do (( number ++)); echo "$i $number off" ; done `)
 projects=$("${cmd[@]}" "${options1[@]}" 2>&1 >/dev/tty)
+echo $projects > /tmp/project-list
 clear
+fi
+projects=`cat /tmp/project-list`
 }
 
-options=("List-service-account-Keys-with-creator-SLOW" "List-service-account-Keys-without-creator-FAST" "List-unused-Service-account" "List-services-account" "Rotate-key" "Quit")
+options=("List-service-account-Keys-with-creator-SLOW" "List-service-account-Keys-without-creator-FAST" "List-unused-Service-account" "List-services-account" "Rotate-key" "Delete-cache" "Quit")
 
 
 select case in "${options[@]}"
@@ -52,6 +57,13 @@ select case in "${options[@]}"
 do 
  
    case $case in 
+
+
+Delete-cache)
+
+rm /tmp/project-list
+;;
+
 
 List-service-account-Keys-with-creator-SLOW)
 listing
@@ -63,9 +75,13 @@ for a in ${projects[@]}
        do  
           list=`key_list $i $a` 
             if  [ ! -z "$list" ] 
-             then 
+             then
+             echo "                                                                         LISTING SERVICE ACCOUNT'S KEY PROCESS"
+             echo -e "\n*************************************************************************************"
              echo -e "\n\nPROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list"   
-             for b in `owner_finder $a $i` ; do echo -e CREATOR $b ; done  
+             for b in `owner_finder $a $i` ; do echo -e CREATOR $b ; done 
+             echo       "************************************************************************************"              
+ 
            fi
        done
            exp=`exp_key $i $a`
@@ -88,7 +104,10 @@ for a in ${projects[@]}
           list=`key_list $i $a`
             if  [ ! -z "$list" ]
              then
+             echo "                                                                        LISTING SERVICE ACCOUNT'S KEY PROCESS"
+             echo -e "\n*************************************************************************************"
              echo -e "\n\nPROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list"   
+             echo       "************************************************************************************"              
            fi
        done
            exp=`exp_key $i $a`
