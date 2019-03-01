@@ -82,7 +82,6 @@ for a in ${projects[@]}
              echo -e "PROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list"   
              for b in `owner_finder $a $i` ; do echo -e CREATOR $b ; done 
              echo       "************************************************************************************"              
- 
            fi
        done
            exp=`exp_key $i $a`
