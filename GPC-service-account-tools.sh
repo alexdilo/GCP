@@ -1,6 +1,11 @@
 #!/bin/bash
 #IFS=$'\n'
-#set -x 
+#set -x
+if ! which dialog 2> /dev/null; the
+echo "you need to install dialog"
+exit 
+fi
+
 clear 
 key_list () {
 
