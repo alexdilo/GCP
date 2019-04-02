@@ -3,7 +3,7 @@
 #set -x 
 clear
 #install 
-if ! which dialog 2>/dev/null ; then
+if ! which dialog &>/dev/null ; then
  
     echo "you need to install dialog"
 exit 
