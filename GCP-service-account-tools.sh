@@ -3,12 +3,15 @@
 #set -x 
 clear
 #install 
-if ! which dialog &>/dev/null ; then
+if ! which dialog &> /dev/null ; then
  
     echo "you need to install dialog"
 exit 
 fi
-   
+  
+
+
+ 
 list_service () { 
 
 listing
@@ -47,11 +50,11 @@ for k in `echo "$list" | awk '{print $1}' | tail -n +2`
 service_account_with_key () {
 
 listing
-service_list=/tmp/service-account-list
+service_list=.tmp/service-account-list
 ans=yes
 clear
-if [  -f /tmp/service-account-list ]; then
- cat /tmp/service-account-list
+if [  -f .tmp/service-account-list ]; then
+ cat .tmp/service-account-list
  echo 
  echo 
  read -p  "service-account list already in cache,do you want to regenarate?(yes/no)" ans
@@ -81,7 +84,7 @@ gcloud iam service-accounts list --format="value($1)" --project "$2"
 
 
 listing () {
-if [ ! -f /tmp/project-list ]; then
+if [ ! -f .tmp/project-list ]; then
 clear
 echo "                                                                         LISTING GOOGLE CLOUD PROJECT PROCESS"
 echo  -e "\033[33;5;7mPlease wait...searching projects that you have access to.This might take a few minute \033[0m"
@@ -90,9 +93,9 @@ cmd=(dialog --separate-output --checklist "Select your projects:" 22  76 16)
 list=("$(for i in $(gcloud projects list --format="value(projectId)") ; do curl -X POST  -H "Authorization:Bearer $token"  https://cloudresourcemanager.googleapis.com/v1/projects/$i:testIamPermissions -H'content-type:application/json' -d'{"permissions":["iam.serviceAccounts.list"]}' 2> /dev/null | grep -q permission && echo $i && sleep 0.5  & done)")
 options1=(`number=0 ; for i in $list ; do (( number ++)); echo "$i $number off" ; done `)
 projects=$("${cmd[@]}" "${options1[@]}" 2>&1 >/dev/tty)
-echo $projects > /tmp/project-list
+echo $projects > .tmp/project-list
 fi
-projects=`cat /tmp/project-list`
+projects=`cat .tmp/project-list`
 clear
 }
 
@@ -110,7 +113,13 @@ fi
 }
 
 
-options=("Inventory" "List-service-account-Keys-with-creator-SLOW" "List-service-account-Keys-without-creator-FAST" "List-unused-Service-account" "List-services-account" "Rotate-key" "Delete-cache" "Quit")
+options=("Inventory" "Generate-service-account-cache" "Inspect-service-account" "List-unused-Service-account" "List-services-account" "Rotate-key" "Delete-cache" "Quit")
+
+
+if [ ! -d ".tmp" ] ; then
+            mkdir .tmp
+         fi
+
 
 
 select case in "${options[@]}"
@@ -122,7 +131,7 @@ do
 
 Delete-cache)
 
-rm /tmp/project-list
+rm .tmp/*
 ;;
 
 
@@ -136,14 +145,18 @@ if [ ! -s $service_list ] ; then
    select c in `cat $service_list`
      do
        anse=yes
-       if [ -f $c.json ] ; then
+       if [ -f ./tmp/$c.json ] ; then
         clear 
         echo "the service account $c is already reigistered"
         echo
-        cat  $c.json | jq .
+        cat  ./tmp/$c.json | jq .
         echo 
         read -p "do you want to update it?(yes/no)" anse
        fi 
+        
+       if [ ! -d ".tmp" ] ; then
+            mkdir .tmp
+         fi
 
        if [ $anse == yes ] ; then
         how="specify how the service account is implemented: Secret? Hardcoded?" 
@@ -154,69 +167,66 @@ if [ ! -s $service_list ] ; then
         clear
     	echo -e ">>>>>>>>>>>>>>>>>SERVICE ACCOUNT KEY INVENTORY<<<<<<<<<<<<<<<<<<"
     	echo   "*********************$c*********************"
+        if [ -f ".tmp/$c" ] ; then
+        echo -e "`cat .tmp/$c`" "\n`cat .tmp/$c.json 2> /dev/null | jq .`\n\n"
+        fi
      	for o in how what where app severity 
           do
              read  -p "`echo "${!o}"` `echo $'\n> '`" $o
              echo
           done
-          echo {'"'service-account'"': '"'$c'"', '"'how'"': '"'$how'"',  '"'what'"': '"'$what'"',  '"'where'"': '"'$where'"', '"'app'"': '"'$app'"', '"'severity'"': '"'$severity'"' } > $c.json
-          echo -e  "A json file has been created for service account $c  $(realpath $c.json)\n"
+          echo {'"'service-account'"': '"'$c'"', '"'how'"': '"'$how'"',  '"'what'"': '"'$what'"',  '"'where'"': '"'$where'"', '"'app'"': '"'$app'"', '"'severity'"': '"'$severity'"' } > .tmp/$c.json
+          echo -e  "A json file has been created for service account $c  $(realpath .tmp/$c.json)\n"
           sleep 4
           clear
       fi
     done
 fi
 ;;
-List-service-account-Keys-with-creator-SLOW)
+Generate-service-account-cache)
 listing
-             echo "                                                                         LISTING SERVICE ACCOUNT'S KEY PROCESS"
 for a in ${projects[@]}
-
    do
-	for i in `service_account email $a` 
-       do  
+        for i in `service_account email $a` 
+       do 
+         if [ ! -d ".tmp" ] ; then
+            mkdir .tmp
+         fi
           list=`key_list $i $a` 
             if  [ ! -z "$list" ] 
              then
-             echo -e "\n\n*************************************************************************************"
-             echo -e "PROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list" 
-             echo -e "`role $a $i`"
-             for b in `owner_finder $a $i` ; do echo -e CREATOR $b ; done 
-             echo       "************************************************************************************"              
+             echo -e "\n\n*************************************************************************************" > .tmp/$i
+             echo -e "PROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list" >> .tmp/$i
+             echo -e "`role $a $i`" >> .tmp/$i
+             for b in `owner_finder $a $i` ; do echo -e CREATOR $b ; done  >> .tmp/$i
+             echo       "************************************************************************************"  >> .tmp/$i
            fi
-       done
+       done 
            exp=`exp_key $i $a`
             if  [ ! -z "$exp" ]
              then
-             echo -e "\n************************Expired Keys***********************"
-             echo -e "$exp\n"
+             echo -e "\n************************Expired Keys***********************" >> .tmp/$i
+             echo -e "$exp\n"  >> .tmp/$i
             fi
     done ;; 
 
 
-List-service-account-Keys-without-creator-FAST)
+Inspect-service-account)
 listing
-             echo "                                                                        LISTING SERVICE ACCOUNT'S KEY PROCESS"
-
-for a in ${projects[@]}
+select a in ${projects[@]}
 
    do
-        for i in `service_account email $a`
+        select i in `service_account email $a`
        do
           list=`key_list $i $a`
             if  [ ! -z "$list" ]
              then
-             echo -e "\n\n*************************************************************************************"
-             echo -e "PROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list"   
-             echo       "************************************************************************************"              
+               if [ -f ".tmp/$i" ] ; then
+               echo -e "`cat .tmp/$i`" "\n`cat .tmp/$i.json 2> /dev/null | jq .`\n\n"
+               else echo "the service account is not present in the cache please run [Generate-service-account-cache]"
+               fi
            fi
        done
-           exp=`exp_key $i $a`
-            if  [ ! -z "$exp" ]
-             then
-             echo -e "\n************************Expired Keys***********************"
-             echo -e "$exp\n"
-            fi
     done ;;
 
 
@@ -238,6 +248,10 @@ for b in  $projects
 
 List-services-account)
 listing
+if [ -f .tmp/service-account-list ] ; then 
+cat .tmp/service-account-list 
+else
+   
 for b in  $projects
  do
   for i in  `service_account email $b`
@@ -248,7 +262,9 @@ for b in  $projects
         echo $i
         fi
       done 
-    done ;; 
+    done
+  fi
+ ;; 
 
 Quit)
 
@@ -265,23 +281,27 @@ exit 1
 
 Rotate-key)
 listing
-clear 
+clear
 select a in ${projects[@]}
-   do
+   do 
       clear
-        select i in `service_account email $a`
+        for i in `service_account email $a`
        do
         clear
            list=`key_list $i $a`
             if  [ ! -z "$list" ]
                then
+               if [ -f ".tmp/$i" ] ; then
+                   echo -e "`cat .tmp/$i`" "`api_call $i $a`" "\n`cat .tmp/$i.json 2> /dev/null | jq .`\n\n"
+                 else
                  echo "                                                                         ROTATING SERVICE ACCOUNT'S KEY PROCESS"
                  echo -e "\n*************************************************************************************"
                  echo -e "PROJECT:   [$a]\nEMAIL_ID:  [$i]\n$list"   
                  for b in `owner_finder $a $i` ; do echo -e CREATOR $b ; done 
                  api_call $i $a 
                  echo       "************************************************************************************"             
-                 cat $i.json | jq . 
+                 cat $i.json | jq .
+               fi  
                  echo -ne "Do you want to remove/rotate any of the above key (y/n)\r"
                  read -s answer 
                  if [ "$answer" == y ] 
@@ -293,7 +313,7 @@ select a in ${projects[@]}
                            read -s answer                          
                            if [ "$answer" == y ]
                             then echo -ne  'deleting key...\r'
-                            echo $idkey >> /tmp/deleteKey
+                            echo $idkey > /tmp/deleteKey
                             sleep 2 
                            fi
                           done
