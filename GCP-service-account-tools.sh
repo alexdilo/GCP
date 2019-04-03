@@ -213,11 +213,14 @@ for a in ${projects[@]}
 
 Inspect-service-account)
 listing
+clear
 select a in ${projects[@]}
 
    do
+        clear
         select i in `service_account email $a`
        do
+          clear
           list=`key_list $i $a`
             if  [ ! -z "$list" ]
              then
