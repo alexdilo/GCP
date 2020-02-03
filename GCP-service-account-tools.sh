@@ -90,7 +90,7 @@ echo "                                                                         L
 echo  -e "\033[33;5;7mPlease wait...searching projects that you have access to.This might take a few minute \033[0m"
 token=$(gcloud auth print-access-token)
 cmd=(dialog --separate-output --checklist "Select your projects:" 22  76 16)
-list=("$(for i in $(gcloud projects list --format="value(projectId)") ; do curl -X POST  -H "Authorization:Bearer $token"  https://cloudresourcemanager.googleapis.com/v1/projects/$i:testIamPermissions -H'content-type:application/json' -d'{"permissions":["iam.serviceAccounts.list"]}' 2> /dev/null | grep -q permission && echo $i && sleep 0.5  & done)")
+list=("$(for i in $(gcloud projects list --format="value(projectId)") ; do curl -X POST  -H "Authorization:Bearer $token"  https://cloudresourcemanager.googleapis.com/v1/projects/$i:testIamPermissions -H'content-type:application/json' -d'{"permissions":["iam.serviceAccounts.list"]}' 2> /dev/null | grep -q permission && echo $i ; done)")
 options1=(`number=0 ; for i in $list ; do (( number ++)); echo "$i $number off" ; done `)
 projects=$("${cmd[@]}" "${options1[@]}" 2>&1 >/dev/tty)
 echo $projects > .tmp/project-list
