@@ -303,7 +303,7 @@ select a in ${projects[@]}
                  for b in `owner_finder $a $i` ; do echo -e CREATOR $b ; done 
                  api_call $i $a 
                  echo       "************************************************************************************"             
-                 cat $i.json | jq .
+                 cat $i.json 2> /dev/null | jq .
                fi  
                  echo -ne "Do you want to remove/rotate any of the above key (y/n)\r"
                  read -s answer 
